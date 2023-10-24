@@ -29,12 +29,12 @@ exports.getCart = (req, res, next) => {
       })
       .catch((error) => {
         res.status(500).json({
-          error: responseMsg.ERR_SYSTEM,
+          msg: responseMsg.ERR_SYSTEM,
         });
       });
   } catch (err) {
     res.status(500).json({
-      error: responseMsg.ERR_SYSTEM,
+      msg: responseMsg.ERR_SYSTEM,
     });
   }
 };
@@ -106,7 +106,7 @@ exports.postCart = (req, res, next) => {
     }
   } else {
     return res.status(409).json({
-      meg: responseMsg.ERR_409_CONFLICT
+      meg: responseMsg.ERR_409_CONFLICT,
     });
   }
 };
@@ -118,7 +118,7 @@ exports.updateCart = (req, res, next) => {
       .connect(DB_URL)
       .then(() => {
         let result = CartItem.updateOne(
-          { _id: req.body.cartId },
+          { _id: req.body.cartId, userId: req.session.userId },
           {
             quantity: req.body.quantity,
             timeStamp: new Date(),
@@ -132,7 +132,7 @@ exports.updateCart = (req, res, next) => {
       })
       .catch((err) => {
         res.status(500).json({
-          error: responseMsg.ERR_SYSTEM,
+          msg: responseMsg.ERR_SYSTEM,
         });
       });
   } else {
@@ -150,20 +150,30 @@ exports.addInToOrders = (req, res, next) => {
     .connect(DB_URL)
     .then(() => {
       let result = CartItem.updateOne(
-        { _id: req.body.cartId },
+        { _id: req.body.cartId, userId: req.session.userId },
         {
           status: "order",
         }
-      ).then(() => {
-        return;
+      ).then((result) => {
+        if (result.modifiedCount === 0) {
+          return res.status(202).json({
+            isAuth: req.session.userId,
+            isAdmin: req.session.isAdmin,
+            msg: responseMsg.ERR_NOT,
+          });
+        } else if (result.modifiedCount != 0) {
+          return res.status(200).json({
+            isAuth: req.session.userId,
+            isAdmin: req.session.isAdmin,
+            msg: responseMsg.SUCCESS,
+          });
+        }
       });
     })
-    .then(() => {
-      res.status(200).redirect("/cart");
-    })
+
     .catch((err) => {
       res.status(500).json({
-        error: responseMsg.ERR_SYSTEM,
+        msg: responseMsg.ERR_SYSTEM,
       });
     });
 };

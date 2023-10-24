@@ -19,25 +19,25 @@ exports.getOrders = (req, res, next) => {
         );
         mongoose.connection.close();
 
-        return res.status().json({
+        return res.status(200).json({
           orderedItemsorders: cartItems.filter(
             (data) => data.status === "order"
           ),
           isUser: req.session.userId,
           isAdmin: req.session.isAdmin,
-          quantityError: req.flash("quantityFlashError")[0],
-          validationErrors: req.flash("validationErrors")[0],
+          // quantityError: req.flash("quantityFlashError")[0],
+          // validationErrors: req.flash("validationErrors")[0],
         });
       })
       .catch((error) => {
         res.status(500).json({
-          error: responseMsg.ERR_INTERNAL_SERVER
+          msg: responseMsg.ERR_INTERNAL_SERVER,
         });
       });
   } catch (err) {
-    console.log("There is error with cart page ");
+    console.log("There is error with order  " + err);
     res.status(500).json({
-      error: responseMsg.ERR_INTERNAL_SERVER
+      msg: responseMsg.ERR_INTERNAL_SERVER,
     });
   }
 };
@@ -51,19 +51,26 @@ exports.unOrder = (req, res, next) => {
         {
           status: "pending",
         }
-      ).then(() => {
-        return;
+      ).then((result) => {
+        if (result.modifiedCount === 0)
+          res.status(202).json({
+            isAuth: req.session.userId,
+            isAdmin: req.session.isAdmin,
+            msg: responseMsg.ERR_NOT,
+          });
+        else if (result.modifiedCount != 0) {
+          res.status(200).json({
+            isAuth: req.session.userId,
+            isAdmin: req.session.isAdmin,
+            msg: responseMsg.SUCCESS,
+          });
+        }
       });
-    })
-    .then(() => {
-      res.status(200).json({
-        msg:responseMsg.SUCCESS
-      })
     })
     .catch((err) => {
       console.log("Edit Items Error : ", err);
       res.status(500).json({
-        error: "Error : " + err,
+        msg:responseMsg.ERR_INTERNAL_SERVER
       });
     });
 };
